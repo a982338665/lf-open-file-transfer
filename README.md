@@ -12,6 +12,7 @@
 - [使用说明](#使用说明)
 - [API接口](#api接口)
 - [项目结构](#项目结构)
+- [跨平台构建](#跨平台构建)
 - [许可证](#许可证)
 
 ## 功能特性
@@ -138,6 +139,111 @@ lf-open-file-transfer/
 ├── go.mod               # Go模块文件
 ├── go.sum               # Go模块校验文件
 └── README.md            # 项目说明文件
+```
+
+## 跨平台构建
+
+本项目使用Go语言开发，可以轻松构建不同操作系统的可执行文件。
+
+### 构建Mac、Linux和Windows可执行文件
+
+在任何支持Go的平台上，你可以构建针对其他平台的可执行文件。
+
+#### 为Windows构建可执行文件:
+
+```bash
+GOOS=windows GOARCH=amd64 go build -o lf-file-transfer-windows-amd64.exe main/main.go
+```
+
+#### 为Mac构建可执行文件:
+
+```bash
+# Intel芯片Mac
+GOOS=darwin GOARCH=amd64 go build -o lf-file-transfer-darwin-amd64 main/main.go
+
+# Apple Silicon (M1/M2)芯片Mac
+GOOS=darwin GOARCH=arm64 go build -o lf-file-transfer-darwin-arm64 main/main.go
+```
+
+#### 为Linux构建可执行文件:
+
+```bash
+# 64位Linux
+GOOS=linux GOARCH=amd64 go build -o lf-file-transfer-linux-amd64 main/main.go
+
+# ARM架构Linux
+GOOS=linux GOARCH=arm64 go build -o lf-file-transfer-linux-arm64 main/main.go
+```
+
+### 批量构建脚本
+
+你也可以创建一个简单的脚本来批量构建所有平台的可执行文件：
+
+#### build.sh (Linux/Mac):
+```bash
+#!/bin/bash
+
+# 构建Windows版本
+echo "Building for Windows..."
+GOOS=windows GOARCH=amd64 go build -o bin/lf-file-transfer-windows-amd64.exe main/main.go
+
+# 构建Mac版本 (Intel)
+echo "Building for Mac (Intel)..."
+GOOS=darwin GOARCH=amd64 go build -o bin/lf-file-transfer-darwin-amd64 main/main.go
+
+# 构建Mac版本 (Apple Silicon)
+echo "Building for Mac (Apple Silicon)..."
+GOOS=darwin GOARCH=arm64 go build -o bin/lf-file-transfer-darwin-arm64 main/main.go
+
+# 构建Linux版本
+echo "Building for Linux..."
+GOOS=linux GOARCH=amd64 go build -o bin/lf-file-transfer-linux-amd64 main/main.go
+
+echo "All builds completed!"
+```
+
+#### build.bat (Windows):
+```batch
+@echo off
+
+echo Building for Windows...
+go build -o bin\lf-file-transfer-windows-amd64.exe main\main.go
+
+echo Building for Mac (Intel)...
+set GOOS=darwin
+set GOARCH=amd64
+go build -o bin\lf-file-transfer-darwin-amd64 main\main.go
+
+echo Building for Mac (Apple Silicon)...
+set GOOS=darwin
+set GOARCH=arm64
+go build -o bin\lf-file-transfer-darwin-arm64 main\main.go
+
+echo Building for Linux...
+set GOOS=linux
+set GOARCH=amd64
+go build -o bin\lf-file-transfer-linux-amd64 main\main.go
+
+echo All builds completed!
+```
+
+### 运行构建的可执行文件
+
+构建完成后，将可执行文件与[public](file:///E:/idea-project/lf-open-file-transfer/public)目录一起打包发布即可。用户只需要运行对应平台的可执行文件，无需安装Go环境。
+
+例如，在Linux上运行：
+```bash
+./lf-file-transfer-linux-amd64
+```
+
+在Windows上运行：
+```cmd
+lf-file-transfer-windows-amd64.exe
+```
+
+在Mac上运行：
+```bash
+./lf-file-transfer-darwin-amd64
 ```
 
 ## 许可证
