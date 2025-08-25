@@ -270,7 +270,7 @@ func main() {
 	r.GET("/api/upload/status/:sessionID/:fileName", getUploadStatus)
 	r.POST("/api/upload/complete/:sessionID/:fileName", completeUpload)
 
-	port := ":8080"
+	port := ":9555"
 	log.Printf("服务器启动在端口 %s...", port)
 	if err := r.Run(port); err != nil {
 		log.Fatalf("服务器启动失败: %v", err)
