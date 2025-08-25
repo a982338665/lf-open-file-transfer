@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>文件传输 - {{ .sessionID }}</h1>
+        <div class="receiver">
+            <h2>接收到的文件</h2>
+            <div class="online-count">在线人数: <span id="online-count">1</span></div>
+            
+            <!-- 当前文件详情 -->
+            <div id="current-file" class="file-display">
+                <p>等待接收文件...</p>
+            </div>
+            
+            <!-- 下载链接 -->
+            <div id="download-link" style="display: none; margin-top: 10px;">
+                <a id="download-anchor" href="#" download>下载文件</a>
+            </div>
+            
+            <!-- 文件传输进度 -->
+            <div id="file-progress" style="display: none; margin-top: 10px;">
+                <p>正在接收文件: <span id="progress-text"></span></p>
+                <div class="progress-display">
+                    <div class="progress-bar" id="receive-progress-bar"></div>
+                </div>
+            </div>
+            
+            <!-- 已接收文件列表 -->
+            <div class="received-files-section">
+                <h3 id="received-files-title">已接收文件 (0)</h3>
+                <div class="file-list" id="received-files-list"></div>
+            </div>
+            
+            <div class="info">
+                <p>提示：上传的文件将在所有连接的客户端间同步</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 连接到WebSocket服务器
+        const sessionID = "{{ .sessionID }}";
+        const ws = new WebSocket(`ws://${window.location.host}/ws/${sessionID}`);
+        
+        const currentFile = document.getElementById('current-file');
+        const downloadLink = document.getElementById('download-link');
+        const downloadAnchor = document.getElementById('download-anchor');
+        const serverDownloadAnchor = document.getElementById('server-download-anchor');
+        const onlineCount = document.getElementById('online-count');
+        const receivedFilesList = document.getElementById('received-files-list');
+        const fileProgress = document.getElementById('file-progress');
+        const progressText = document.getElementById('progress-text');
+        const receiveProgressBar = document.getElementById('receive-progress-bar');
+        
+        // 存储已接收的文件
+        let receivedFiles = [];
+        // 存储当前正在接收的文件块
+        let receivingFiles = {}; // 使用对象存储多个文件
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 初始化已接收文件列表
+            updateReceivedFilesList();
+        });
+        
+        ws.onopen = function(event) {
+            console.log("WebSocket连接已建立");
+        };
+        
+        ws.onmessage = function(event) {
+            try {
+                const message = JSON.parse(event.data);
+                console.log("收到WebSocket消息:", message);
+                switch (message.type) {
+                    case 'file':
+                        // 显示文件信息
+                        showCurrentFileInfo({
+                            name: message.name,
+                            size: message.size,
+                            data: message.data,
+                            tempFilePath: message.tempFilePath
+                        });
+                        
+                        // 添加到已接收文件列表
+                        addToReceivedFiles({
+                            name: message.name,
+                            size: message.size,
+                            data: message.data,
+                            tempFilePath: message.tempFilePath
+                        });
+                        console.log("文件接收完成:", message.name);
+                        break;
+                    case 'file_chunk':
+                        // 处理文件块
+                        handleFileChunk(message);
+                        break;
+                    case 'clients':
+                        onlineCount.textContent = message.clients;
+                        break;
+                    case 'error':
+                        alert("错误: " + message.content);
+                        break;
+                    case 'system':
+                        console.log("系统消息:", message.content);
+                        break;
+                    case 'history':
+                        // 处理历史文件消息
+                        if (message.files && Array.isArray(message.files)) {
+                            message.files.forEach(file => {
+                                addToReceivedFiles({
+                                    name: file.name,
+                                    size: file.size,
+                                    tempFilePath: file.tempFilePath
+                                });
+                            });
+                            console.log("接收到历史文件记录:", message.files);
+                        }
+                        break;
+                }
+            } catch (e) {
+                console.error("解析消息失败:", e);
+            }
+        };
+        
+        // 处理文件块
+        function handleFileChunk(chunkMessage) {
+            // 初始化接收文件信息
+            if (!receivingFiles[chunkMessage.name]) {
+                receivingFiles[chunkMessage.name] = {
+                    name: chunkMessage.name,
+                    size: chunkMessage.size,
+                    chunks: {},
+                    totalChunks: chunkMessage.totalChunks,
+                    receivedChunks: 0
+                };
+                
+                // 显示进度条
+                fileProgress.style.display = 'block';
+                progressText.textContent = `${chunkMessage.name} (0/${chunkMessage.totalChunks})`;
+                receiveProgressBar.style.width = '0%';
+            }
+            
+            const receivingFile = receivingFiles[chunkMessage.name];
+            
+            // 存储文件块
+            receivingFile.chunks[chunkMessage.currentChunk] = chunkMessage.data;
+            receivingFile.receivedChunks++;
+            
+            // 更新进度
+            const progress = Math.round((receivingFile.receivedChunks / receivingFile.totalChunks) * 100);
+            progressText.textContent = `${receivingFile.name} (${receivingFile.receivedChunks}/${receivingFile.totalChunks})`;
+            receiveProgressBar.style.width = `${progress}%`;
+            
+            // 如果接收完所有块
+            if (chunkMessage.isLastChunk) {
+                // 合并所有块
+                const allData = [];
+                for (let i = 0; i < receivingFile.totalChunks; i++) {
+                    if (receivingFile.chunks[i]) {
+                        allData.push(...receivingFile.chunks[i]);
+                    }
+                }
+                
+                // 显示文件信息
+                showCurrentFileInfo({
+                    name: receivingFile.name,
+                    size: receivingFile.size,
+                    data: allData,
+                    tempFilePath: chunkMessage.tempFilePath // 添加tempFilePath参数
+                });
+                
+                // 添加到已接收文件列表
+                addToReceivedFiles({
+                    name: receivingFile.name,
+                    size: receivingFile.size,
+                    data: allData,
+                    tempFilePath: chunkMessage.tempFilePath // 添加tempFilePath参数
+                });
+                
+                // 清理接收完成的文件
+                delete receivingFiles[receivingFile.name];
+                
+                // 如果没有其他正在接收的文件，隐藏进度条
+                if (Object.keys(receivingFiles).length === 0) {
+                    fileProgress.style.display = 'none';
+                }
+                
+                console.log("文件块接收完成:", receivingFile.name);
+            }
+        }
+        
+        // 显示当前文件信息
+        function showCurrentFileInfo(fileInfo) {
+            currentFile.innerHTML = `
+                <p><strong>文件名:</strong> ${fileInfo.name}</p>
+                <p><strong>文件大小:</strong> ${formatFileSize(fileInfo.size)}</p>
+            `;
+            
+            // 显示下载链接
+            if (fileInfo.tempFilePath) {
+                // 如果有服务器上的临时文件路径，提供服务器下载链接
+                downloadAnchor.href = `/download/${sessionID}/${fileInfo.name}`;
+                downloadAnchor.download = fileInfo.name;
+                downloadAnchor.textContent = `下载 ${fileInfo.name}`;
+                downloadLink.style.display = 'block';
+                console.log("提供服务器下载链接:", `/download/${sessionID}/${fileInfo.name}`);
+            } else if (fileInfo.data) {
+                // 否则使用内存中的数据创建下载链接
+                const byteArray = new Uint8Array(fileInfo.data);
+                const blob = new Blob([byteArray]);
+                const url = URL.createObjectURL(blob);
+                downloadAnchor.href = url;
+                downloadAnchor.download = fileInfo.name;
+                downloadAnchor.textContent = `下载 ${fileInfo.name}`;
+                downloadLink.style.display = 'block';
+                console.log("提供内存数据下载链接");
+            }
+        }
+        
+        // 添加到已接收文件列表
+        function addToReceivedFiles(fileInfo) {
+            // 添加到数组开头
+            receivedFiles.unshift(fileInfo);
+            
+            // 更新已接收文件列表
+            updateReceivedFilesList();
+        }
+        
+        // 更新已接收文件列表
+        function updateReceivedFilesList() {
+            receivedFilesList.innerHTML = '';
+
+            // 更新标题中的数量
+            const receivedFilesTitle = document.getElementById('received-files-title');
+            if (receivedFilesTitle) {
+                receivedFilesTitle.textContent = `已接收文件 (${receivedFiles.length})`;
+            }
+
+            receivedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                if (file.tempFilePath) {
+                    // 如果有服务器上的临时文件路径，提供服务器下载链接
+                    fileItem.innerHTML = `
+                        <p><strong>${file.name}</strong></p>
+                        <p>大小: ${formatFileSize(file.size)}</p>
+                        <a href="/download/${sessionID}/${file.name}" target="_blank">从服务器下载</a>
+                    `;
+                } else if (file.data) {
+                    // 否则使用内存中的数据创建下载链接
+                    const byteArray = new Uint8Array(file.data);
+                    const blob = new Blob([byteArray]);
+                    const url = URL.createObjectURL(blob);
+                    
+                    fileItem.innerHTML = `
+                        <p><strong>${file.name}</strong></p>
+                        <p>大小: ${formatFileSize(file.size)}</p>
+                        <a href="${url}" download="${file.name}">下载</a>
+                    `;
+                }
+                
+                receivedFilesList.appendChild(fileItem);
+            });
+        }
+
+        ws.onclose = function(event) {
+            console.log("WebSocket连接已关闭");
+            currentFile.innerHTML = "<p>连接已断开</p>";
+        };
+        
+        ws.onerror = function(error) {
+            console.error("WebSocket错误:", error);
+            currentFile.innerHTML = "<p>连接出错</p>";
+        };
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

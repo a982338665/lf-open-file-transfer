@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>文字传输 - {{ .sessionID }}</h1>
+        <div class="receiver">
+            <h2>文字内容</h2>
+            <div class="online-count">在线人数: <span id="online-count">1</span></div>
+            <textarea id="received-text" class="text-display" placeholder="等待接收内容或在此输入文字..."></textarea>
+            <div class="info">
+                <p>提示：文字内容将在所有连接的客户端间实时同步</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 连接到WebSocket服务器
+        const sessionID = "{{ .sessionID }}";
+        const ws = new WebSocket(`ws://${window.location.host}/ws/${sessionID}`);
+        
+        const receivedText = document.getElementById('received-text');
+        const onlineCount = document.getElementById('online-count');
+        let isRemoteUpdate = false;
+        
+        ws.onopen = function(event) {
+            console.log("WebSocket连接已建立");
+        };
+        
+        ws.onmessage = function(event) {
+            try {
+                const message = JSON.parse(event.data);
+                switch (message.type) {
+                    case 'text':
+                        isRemoteUpdate = true;
+                        receivedText.value = message.content;
+                        isRemoteUpdate = false;
+                        break;
+                    case 'system':
+                        console.log("系统消息:", message.content);
+                        break;
+                    case 'clients':
+                        onlineCount.textContent = message.clients;
+                        break;
+                }
+            } catch (e) {
+                console.error("解析消息失败:", e);
+            }
+        };
+        
+        ws.onclose = function(event) {
+            console.log("WebSocket连接已关闭");
+        };
+        
+        ws.onerror = function(error) {
+            console.error("WebSocket错误:", error);
+        };
+        
+        // 监听文本变化并发送
+        let timeout;
+        receivedText.addEventListener('input', function() {
+            // 避免远程更新时再次发送消息
+            if (isRemoteUpdate) return;
+            
+            // 防抖处理，避免过于频繁发送
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    const message = {
+                        type: 'text',
+                        content: this.value,
+                        sessionID: sessionID,
+                        timestamp: new Date()
+                    };
+                    ws.send(JSON.stringify(message));
+                }
+            }, 300);
+        });
+    </script>
+</body>
+</html>

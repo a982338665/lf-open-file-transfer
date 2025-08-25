@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ .title }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>P2P 文件和文字传输</h1>
+            <button id="settings-btn" class="settings-btn" title="设置URL链接">⚙️</button>
+        </div>
+        <div class="tabs">
+            <button class="tab-button" data-tab="text">文字传输</button>
+            <button class="tab-button active" data-tab="file">文件传输</button>
+        </div>
+
+        <div id="text-tab" class="tab-content">
+            <h2>文字传输</h2>
+            <div class="online-count">在线人数: <span id="text-online-count">1</span></div>
+            <textarea id="text-input" placeholder="在此输入要传输的文字..."></textarea>
+            <div class="url-display">
+                <label>共享链接:</label>
+                <input type="text" id="text-url" readonly>
+                <button id="copy-text-url">复制链接</button>
+            </div>
+        </div>
+
+        <div id="file-tab" class="tab-content active">
+            <h2>文件传输</h2>
+            <div class="online-count">在线人数: <span id="file-online-count">1</span></div>
+
+            <!-- 拖拽上传区域 -->
+            <div id="drop-area" class="drop-area">
+                <p>拖拽文件到此处或点击选择文件</p>
+                <input type="file" id="file-input" multiple>
+            </div>
+
+            <div class="info">
+                <p>提示：文件将在服务器上临时存储，当所有客户端断开连接后自动删除</p>
+            </div>
+
+            <!-- 已发送文件列表 -->
+            <div class="sent-files-section">
+                <h3 id="sent-files-title">已发送文件 (0)</h3>
+                <div class="file-list" id="sent-files-list"></div>
+            </div>
+
+            <div class="url-display">
+                <label>共享链接:</label>
+                <input type="text" id="file-url" readonly>
+                <button id="copy-file-url">复制链接</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>设置URL链接</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="setting-group">
+                    <label>链接模式：</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="url-mode" value="number" checked>
+                            <span class="radio-text">数字累加 (1, 2, 3...)</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="url-mode" value="uuid">
+                            <span class="radio-text">UUID (随机字符串)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="save-settings" class="btn-primary">保存设置</button>
+                <button id="cancel-settings" class="btn-secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/resumable-upload.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
