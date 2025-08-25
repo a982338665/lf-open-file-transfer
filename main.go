@@ -3,10 +3,13 @@ package main
 import (
 	"crypto/md5"
 	"crypto/sha256"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -20,6 +23,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
+
+//go:embed public/static
+var staticFiles embed.FS
+
+//go:embed public/templates
+var templateFiles embed.FS
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -180,9 +189,16 @@ func main() {
 	// 启动定期清理temp目录的goroutine
 	go cleanupTempDir()
 
-	// 设置静态文件服务
-	r.Static("/static", "../public/static")
-	r.LoadHTMLGlob("../public/templates/*")
+	// 设置嵌入的静态文件服务
+	staticFS, err := fs.Sub(staticFiles, "public/static")
+	if err != nil {
+		log.Fatal("无法创建静态文件系统:", err)
+	}
+	r.StaticFS("/static", http.FS(staticFS))
+
+	// 设置嵌入的模板
+	templ := template.Must(template.New("").ParseFS(templateFiles, "public/templates/*.html"))
+	r.SetHTMLTemplate(templ)
 
 	// 添加下载临时文件的路由
 	r.GET("/download/:sessionID/:filename", func(c *gin.Context) {

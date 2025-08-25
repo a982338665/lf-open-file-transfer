@@ -62,7 +62,7 @@
 
 3. 运行项目:
    ```bash
-   go run main/main.go
+   go run main.go
    ```
 
 4. 访问应用:
@@ -71,7 +71,7 @@
 ### 构建可执行文件
 
 ```bash
-go build -o lf-file-transfer main/main.go
+go build -o lf-file-transfer main.go
 ./lf-file-transfer
 ```
 
@@ -124,12 +124,11 @@ go build -o lf-file-transfer main/main.go
 - `GET /api/upload/status/:sessionID/:fileName` - 获取上传状态
 - `POST /api/upload/complete/:sessionID/:fileName` - 完成上传
 
-## 项目结构
+## 项目结构lf
 
 ```
 lf-open-file-transfer/
-├── main/                  # 主程序目录
-│   └── main.go           # 程序入口文件
+├── main.go           # 程序入口文件
 ├── public/               # 前端资源目录
 │   ├── static/           # 静态资源
 │   │   ├── css/          # 样式文件
@@ -152,27 +151,27 @@ lf-open-file-transfer/
 #### 为Windows构建可执行文件:
 
 ```bash
-GOOS=windows GOARCH=amd64 go build -o lf-file-transfer-windows-amd64.exe main/main.go
+GOOS=windows GOARCH=amd64 go build -o lf-file-transfer-windows-amd64.exe main.go
 ```
 
 #### 为Mac构建可执行文件:
 
 ```bash
 # Intel芯片Mac
-GOOS=darwin GOARCH=amd64 go build -o lf-file-transfer-darwin-amd64 main/main.go
+GOOS=darwin GOARCH=amd64 go build -o lf-file-transfer-darwin-amd64 main.go
 
 # Apple Silicon (M1/M2)芯片Mac
-GOOS=darwin GOARCH=arm64 go build -o lf-file-transfer-darwin-arm64 main/main.go
+GOOS=darwin GOARCH=arm64 go build -o lf-file-transfer-darwin-arm64 main.go
 ```
 
 #### 为Linux构建可执行文件:
 
 ```bash
 # 64位Linux
-GOOS=linux GOARCH=amd64 go build -o lf-file-transfer-linux-amd64 main/main.go
+GOOS=linux GOARCH=amd64 go build -o lf-file-transfer-linux-amd64 main.go
 
 # ARM架构Linux
-GOOS=linux GOARCH=arm64 go build -o lf-file-transfer-linux-arm64 main/main.go
+GOOS=linux GOARCH=arm64 go build -o lf-file-transfer-linux-arm64 main.go
 ```
 
 ### 批量构建脚本
@@ -185,19 +184,19 @@ GOOS=linux GOARCH=arm64 go build -o lf-file-transfer-linux-arm64 main/main.go
 
 # 构建Windows版本
 echo "Building for Windows..."
-GOOS=windows GOARCH=amd64 go build -o bin/lf-file-transfer-windows-amd64.exe main/main.go
+GOOS=windows GOARCH=amd64 go build -o bin/lf-file-transfer-windows-amd64.exe main.go
 
 # 构建Mac版本 (Intel)
 echo "Building for Mac (Intel)..."
-GOOS=darwin GOARCH=amd64 go build -o bin/lf-file-transfer-darwin-amd64 main/main.go
+GOOS=darwin GOARCH=amd64 go build -o bin/lf-file-transfer-darwin-amd64 main.go
 
 # 构建Mac版本 (Apple Silicon)
 echo "Building for Mac (Apple Silicon)..."
-GOOS=darwin GOARCH=arm64 go build -o bin/lf-file-transfer-darwin-arm64 main/main.go
+GOOS=darwin GOARCH=arm64 go build -o bin/lf-file-transfer-darwin-arm64 main.go
 
 # 构建Linux版本
 echo "Building for Linux..."
-GOOS=linux GOARCH=amd64 go build -o bin/lf-file-transfer-linux-amd64 main/main.go
+GOOS=linux GOARCH=amd64 go build -o bin/lf-file-transfer-linux-amd64 main.go
 
 echo "All builds completed!"
 ```
@@ -207,22 +206,22 @@ echo "All builds completed!"
 @echo off
 
 echo Building for Windows...
-go build -o bin\lf-file-transfer-windows-amd64.exe main\main.go
+go build -o bin\lf-file-transfer-windows-amd64.exe main.go
 
 echo Building for Mac (Intel)...
 set GOOS=darwin
 set GOARCH=amd64
-go build -o bin\lf-file-transfer-darwin-amd64 main\main.go
+go build -o bin\lf-file-transfer-darwin-amd64 main.go
 
 echo Building for Mac (Apple Silicon)...
 set GOOS=darwin
 set GOARCH=arm64
-go build -o bin\lf-file-transfer-darwin-arm64 main\main.go
+go build -o bin\lf-file-transfer-darwin-arm64 main.go
 
 echo Building for Linux...
 set GOOS=linux
 set GOARCH=amd64
-go build -o bin\lf-file-transfer-linux-amd64 main\main.go
+go build -o bin\lf-file-transfer-linux-amd64 main.go
 
 echo All builds completed!
 ```
